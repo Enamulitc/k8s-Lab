@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment           # Name of the Deployment
+  namespace: dev                   # Namespace where the Deployment will be created
+  labels:
+    app: nginx                     # Label used to identify this deployment
+spec:
+  replicas: 3                      # Number of pod replicas to maintain
+  selector:
+    matchLabels:
+      app: nginx                   # Selector to match the pods managed by this deployment
+  strategy:
+    type: RollingUpdate            # Strategy for updating the pods (default is RollingUpdate)
+    rollingUpdate:
+      maxUnavailable: 25%          # Max number of pods that can be unavailable during the update
+      maxSurge: 25%                # Max number of extra pods that can be created during the update
+  template:
+    metadata:
+      labels:
+        app: nginx                 # Label to apply to the pods created by this deployment
+    spec:
+      securityContext:
+        runAsUser: 1000            # User ID to run the pod
+        runAsGroup: 3000           # Group ID to run the pod
+        fsGroup: 2000              # File system group ID for the pod
+      containers:
+      - name: nginx                # Name of the container
+        image: nginx:latest        # Docker image to use for this container
+        ports:
+        - containerPort: 80        # Port on which the container will listen
+        resources:
+          requests:
+            memory: "64Mi"         # Minimum amount of memory requested
+            cpu: "250m"            # Minimum amount of CPU requested
+          limits:
+            memory: "256Mi"        # Maximum amount of memory allowed
+            cpu: "500m"            # Maximum amount of CPU allowed
+        livenessProbe:
+          httpGet:
+            path: /                # Path to check for the liveness probe
+            port: 80               # Port to use for the liveness probe
+          initialDelaySeconds: 30  # Delay before the liveness probe starts
+          periodSeconds: 10        # Frequency of the liveness probe checks
+        readinessProbe:
+          httpGet:
+            path: /                # Path to check for the readiness probe
+            port: 80               # Port to use for the readiness probe
+          initialDelaySeconds: 5   # Delay before the readiness probe starts
+          periodSeconds: 10        # Frequency of the readiness probe checks
+        volumeMounts:
+        - name: nginx-config       # Name of the volume to mount
+          mountPath: /etc/nginx/nginx.conf # Path in the container to mount the volume
+          subPath: nginx.conf      # Sub-path within the volume to use
+      volumes:
+      - name: nginx-config         # Name of the volume
+        configMap:
+          name: nginx-config       # Name of the ConfigMap to use as the volume
+---
+apiVersion: v1                     # Specifies the API version for the ConfigMap
+kind: ConfigMap                    # Specifies that this is a ConfigMap resource
+metadata:
+  name: nginx-config               # Name of the ConfigMap
+  namespace: dev                   # Namespace where the ConfigMap will be created
+data:
+  nginx.conf: |                    # Data for the ConfigMap, in this case, the Nginx configuration file
+    user  nginx;
+    worker_processes  1;
+
+    error_log  /var/log/nginx/error.log warn;
+    pid        /var/run/nginx.pid;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log  /var/log/nginx/access.log  main;
+
+        sendfile        on;
+        #tcp_nopush     on;
+
+        keepalive_timeout  65;
+
+        #gzip  on;
+
+        server {
+            listen       80;
+            server_name  localhost;
+
+            #charset koi8-r;
+
+            #access_log  /var/log/nginx/host.access.log  main;
+
+            location / {
+                root   /usr/share/nginx/html;
+                index  index.html index.htm;
+            }
+
+            #error_page  404              /404.html;
+
+            # redirect server error pages to the static page /50x.html
+            #
+            error_page   500 502 503 504  /50x.html;
+            location = /50x.html {
+                root   /usr/share/nginx/html;
+            }
+
+            # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+            #
+            #location ~ \.php$ {
+            #    proxy_pass   http://127.0.0.1;
+            #}
+
+            # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000;
+            #
+            #location ~ \.php$ {
+            #    root           html;
+            #    fastcgi_pass   127.0.0.1:9000;
+            #    fastcgi_index  index.php;
+            #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            #    include        fastcgi_params;
+            #}
+
+            # deny access to .htaccess files, if Apache's document root
+            # concurs with nginx's one
+            #
+            #location ~ /\.ht {
+            #    deny  all;
+            #}
+        }
+    }

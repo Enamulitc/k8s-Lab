@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv1local
+spec:
+  accessModes:
+    - ReadWriteOnce #others like ReadOnlyMany or ReadWriteMany
+  capacity: 
+    storage: 10Gi
+  hostPath: 
+    path: /tmp/data #it's not to be use in a production envionemnt 
