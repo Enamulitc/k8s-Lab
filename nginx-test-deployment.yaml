@@ -2,8 +2,10 @@ apiVersion: apps/v1
 kind: Deployment 
 metadata: 
   name: nginx-deployment
+  annotations:  #this annotation for describing the update casue 
+    kubernetes.io/change-cause: "reduce the replicaset"
 spec: 
-  replicas: 2
+  replicas: 3
   selector: 
    matchLabels:
      app: nginx
@@ -15,6 +17,14 @@ spec:
     spec: 
       containers:
         - name: nginx-container
-          image: nginx:1.21.3
+          image: nginx:alpine
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
           ports:
             - containerPort: 80
+#kubectl get all
+#Check the revision of deployment
+#kubectl rollout history deployment/nginx-deployment
+#kubectl rollout undo deployment/nginx-deployment --to-revision=2
