@@ -1,0 +1,11 @@
+apiVersion: v1      #kubectl api-resources | grep pvc  
+kind: PersistentVolumeClaim
+metadata:
+  name: ebs-claim
+spec:
+  accessModes:
+    - ReadWriteOnce #for single node Readonly for manay node "ReadOnlyMany"  #read-write by many nodes "ReadWriteMany"
+  storageClassName: ebs-sc
+  resources:
+    requests:
+      storage: 1Gi

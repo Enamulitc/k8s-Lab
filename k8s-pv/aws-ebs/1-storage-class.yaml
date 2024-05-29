@@ -1,0 +1,8 @@
+apiVersion: storage.k8s.io/v1 #kubectl api-resources | grep storageclass  
+kind: StorageClass
+metadata: 
+  name: ebs-sc
+provisioner: ebs.csi.aws.com #define the mentioned provisoner if your k8s-cluster version > 1.20 if not then use kubernetes.io/aws-ebs
+parameters:
+    type: gp2 #we just want to create gp2-type volume 
+volumeBindingMode: Immediate   #or we can use "Immediate" WaitForFirstConsumer
